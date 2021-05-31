@@ -25,8 +25,8 @@ func NewDispatcher(ctx context.Context, logger logger.Logger) Dispatcher {
 
 // Dispatcher abstraction for event dispatchers
 type Dispatcher interface {
-	Fire(eventName string, event Event, onError ...func(err error) (stopPropagation bool))
-	Dispatch(eventName string, event Event, onError ...func(err error) (stopPropagation bool)) error
+	Fire(eventName string, event Event, onError ...ErrorFn)
+	Dispatch(eventName string, event Event, onError ...ErrorFn) error
 	AddListener(eventName string, listener Listener) string
 	AddListenerWithPriority(eventName string, listener Listener, priority int) string
 	AddSubscriber(subscriber Subscriber) string
@@ -49,13 +49,13 @@ type defaultDispatcher struct {
 	subscriber map[string][]string
 }
 
-func (d *defaultDispatcher) Fire(eventName string, event Event, onError ...func(err error) (stopPropagation bool)) {
+func (d *defaultDispatcher) Fire(eventName string, event Event, onError ...ErrorFn) {
 	go func(n string, e Event) {
 		_ = d.Dispatch(n, e, onError...)
 	}(eventName, event)
 }
 
-func (d *defaultDispatcher) Dispatch(eventName string, event Event, onError ...func(err error) (stopPropagation bool)) error {
+func (d *defaultDispatcher) Dispatch(eventName string, event Event, onError ...ErrorFn) error {
 	var result *multierror.Error
 
 	for _, h := range d.handlers {
@@ -63,7 +63,7 @@ func (d *defaultDispatcher) Dispatch(eventName string, event Event, onError ...f
 			continue
 		}
 
-		if err := h.listener(event); err != nil {
+		if err := h.listener(eventName, event); err != nil {
 			result = multierror.Append(result, err)
 
 			d.logger.Errorf("error while dispatching event: %v", err)

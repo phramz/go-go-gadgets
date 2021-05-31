@@ -40,23 +40,23 @@ type testSubscriberBar struct {
 
 func (t *testSubscriberFoo) GetSubscriptions() []Subscription {
 	return []Subscription{
-		NewSubscriptionWithPriority("foo", func(event Event) error {
+		NewSubscriptionWithPriority("foo", func(_ string, event Event) error {
 			t.handle("foo", "!")
 			return nil
 		}, 1),
-		NewSubscription("foo", func(event Event) error {
+		NewSubscription("foo", func(_ string, event Event) error {
 			t.handle("foo", "l")
 			return nil
 		}),
-		NewSubscriptionWithPriority("foo", func(event Event) error {
+		NewSubscriptionWithPriority("foo", func(_ string, event Event) error {
 			t.handle("foo", "o")
 			return nil
 		}, -1),
-		NewSubscription("foo", func(event Event) error {
+		NewSubscription("foo", func(_ string, event Event) error {
 			t.handle("foo", "a")
 			return nil
 		}),
-		NewSubscriptionWithPriority("foo", func(event Event) error {
+		NewSubscriptionWithPriority("foo", func(_ string, event Event) error {
 			t.handle("foo", "h")
 			return nil
 		}, -123),
@@ -65,31 +65,31 @@ func (t *testSubscriberFoo) GetSubscriptions() []Subscription {
 
 func (t *testSubscriberBar) GetSubscriptions() []Subscription {
 	return []Subscription{
-		NewSubscriptionWithPriority("bar", func(event Event) error {
+		NewSubscriptionWithPriority("bar", func(_ string, event Event) error {
 			t.handle("bar", "c")
 			return nil
 		}, -100),
-		NewSubscriptionWithPriority("bar", func(event Event) error {
+		NewSubscriptionWithPriority("bar", func(_ string, event Event) error {
 			t.handle("bar", "i")
 			return nil
 		}, -1),
-		NewSubscriptionWithPriority("bar", func(event Event) error {
+		NewSubscriptionWithPriority("bar", func(_ string, event Event) error {
 			t.handle("bar", "h")
 			return nil
 		}, -100),
-		NewSubscriptionWithPriority("bar", func(event Event) error {
+		NewSubscriptionWithPriority("bar", func(_ string, event Event) error {
 			t.handle("bar", "c")
 			return nil
 		}, -1),
-		NewSubscription("bar", func(event Event) error {
+		NewSubscription("bar", func(_ string, event Event) error {
 			t.handle("bar", "h")
 			return nil
 		}),
-		NewSubscriptionWithPriority("bar", func(event Event) error {
+		NewSubscriptionWithPriority("bar", func(_ string, event Event) error {
 			t.handle("bar", "a")
 			return nil
 		}, 55),
-		NewSubscriptionWithPriority("bar", func(event Event) error {
+		NewSubscriptionWithPriority("bar", func(_ string, event Event) error {
 			t.handle("bar", "!")
 			return nil
 		}, 99),
@@ -107,7 +107,7 @@ func TestDefaultDispatcher_AddListener(t *testing.T) {
 	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
 
 	var result string
-	dispatcher.AddListener("foo", func(event Event) error {
+	dispatcher.AddListener("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%v", event)
 		return nil
 	})
@@ -120,7 +120,7 @@ func TestDefaultDispatcher_RemoveListener(t *testing.T) {
 	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
 
 	var result string
-	listenerID := dispatcher.AddListener("foo", func(event Event) error {
+	listenerID := dispatcher.AddListener("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%v%v", result, event)
 		return nil
 	})
@@ -141,27 +141,27 @@ func TestDefaultDispatcher_AddListenerWithPriority(t *testing.T) {
 
 	var result string
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
+	dispatcher.AddListenerWithPriority("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%va", result)
 		return nil
 	}, 100)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
+	dispatcher.AddListenerWithPriority("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%vo", result)
 		return nil
 	}, 0)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
+	dispatcher.AddListenerWithPriority("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%v!", result)
 		return nil
 	}, 255)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
+	dispatcher.AddListenerWithPriority("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%vh", result)
 		return nil
 	}, -100)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
+	dispatcher.AddListenerWithPriority("foo", func(_ string, event Event) error {
 		result = fmt.Sprintf("%vl", result)
 		return nil
 	}, 0)
