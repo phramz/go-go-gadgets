@@ -4,4 +4,4 @@ package event
 type Event = interface{}
 
 // Listener generic listener type alias
-type Listener = func(event Event)
+type Listener = func(event Event) error

@@ -40,46 +40,58 @@ type testSubscriberBar struct {
 
 func (t *testSubscriberFoo) GetSubscriptions() []Subscription {
 	return []Subscription{
-		NewSubscriptionWithPriority("foo", func(event Event) {
+		NewSubscriptionWithPriority("foo", func(event Event) error {
 			t.handle("foo", "!")
+			return nil
 		}, 1),
-		NewSubscription("foo", func(event Event) {
+		NewSubscription("foo", func(event Event) error {
 			t.handle("foo", "l")
+			return nil
 		}),
-		NewSubscriptionWithPriority("foo", func(event Event) {
+		NewSubscriptionWithPriority("foo", func(event Event) error {
 			t.handle("foo", "o")
+			return nil
 		}, -1),
-		NewSubscription("foo", func(event Event) {
+		NewSubscription("foo", func(event Event) error {
 			t.handle("foo", "a")
+			return nil
 		}),
-		NewSubscriptionWithPriority("foo", func(event Event) {
+		NewSubscriptionWithPriority("foo", func(event Event) error {
 			t.handle("foo", "h")
+			return nil
 		}, -123),
 	}
 }
 
 func (t *testSubscriberBar) GetSubscriptions() []Subscription {
 	return []Subscription{
-		NewSubscriptionWithPriority("bar", func(event Event) {
+		NewSubscriptionWithPriority("bar", func(event Event) error {
 			t.handle("bar", "c")
+			return nil
 		}, -100),
-		NewSubscriptionWithPriority("bar", func(event Event) {
+		NewSubscriptionWithPriority("bar", func(event Event) error {
 			t.handle("bar", "i")
+			return nil
 		}, -1),
-		NewSubscriptionWithPriority("bar", func(event Event) {
+		NewSubscriptionWithPriority("bar", func(event Event) error {
 			t.handle("bar", "h")
+			return nil
 		}, -100),
-		NewSubscriptionWithPriority("bar", func(event Event) {
+		NewSubscriptionWithPriority("bar", func(event Event) error {
 			t.handle("bar", "c")
+			return nil
 		}, -1),
-		NewSubscription("bar", func(event Event) {
+		NewSubscription("bar", func(event Event) error {
 			t.handle("bar", "h")
+			return nil
 		}),
-		NewSubscriptionWithPriority("bar", func(event Event) {
+		NewSubscriptionWithPriority("bar", func(event Event) error {
 			t.handle("bar", "a")
+			return nil
 		}, 55),
-		NewSubscriptionWithPriority("bar", func(event Event) {
+		NewSubscriptionWithPriority("bar", func(event Event) error {
 			t.handle("bar", "!")
+			return nil
 		}, 99),
 	}
 }
@@ -95,11 +107,12 @@ func TestDefaultDispatcher_AddListener(t *testing.T) {
 	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
 
 	var result string
-	dispatcher.AddListener("foo", func(event Event) {
+	dispatcher.AddListener("foo", func(event Event) error {
 		result = fmt.Sprintf("%v", event)
+		return nil
 	})
 
-	dispatcher.Dispatch("foo", "bar")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
 	assert.Equal(t, "bar", result)
 }
 
@@ -107,17 +120,18 @@ func TestDefaultDispatcher_RemoveListener(t *testing.T) {
 	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
 
 	var result string
-	listenerID := dispatcher.AddListener("foo", func(event Event) {
+	listenerID := dispatcher.AddListener("foo", func(event Event) error {
 		result = fmt.Sprintf("%v%v", result, event)
+		return nil
 	})
 
-	dispatcher.Dispatch("foo", "bar")
-	dispatcher.Dispatch("foo", "bazz")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Dispatch("foo", "bazz"))
 	assert.Equal(t, "barbazz", result)
 
 	dispatcher.RemoveListener(listenerID)
-	dispatcher.Dispatch("foo", "bar")
-	dispatcher.Dispatch("foo", "bazz")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Dispatch("foo", "bazz"))
 
 	assert.Equal(t, "barbazz", result)
 }
@@ -127,27 +141,32 @@ func TestDefaultDispatcher_AddListenerWithPriority(t *testing.T) {
 
 	var result string
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) {
+	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
 		result = fmt.Sprintf("%va", result)
+		return nil
 	}, 100)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) {
+	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
 		result = fmt.Sprintf("%vo", result)
+		return nil
 	}, 0)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) {
+	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
 		result = fmt.Sprintf("%v!", result)
+		return nil
 	}, 255)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) {
+	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
 		result = fmt.Sprintf("%vh", result)
+		return nil
 	}, -100)
 
-	dispatcher.AddListenerWithPriority("foo", func(event Event) {
+	dispatcher.AddListenerWithPriority("foo", func(event Event) error {
 		result = fmt.Sprintf("%vl", result)
+		return nil
 	}, 0)
 
-	dispatcher.Dispatch("foo", "bar")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
 	assert.Equal(t, "hola!", result)
 }
 
@@ -157,19 +176,19 @@ func TestDefaultDispatcher_AddSubscriber(t *testing.T) {
 	subscriberFoo := &testSubscriberFoo{}
 	dispatcher.AddSubscriber(subscriberFoo)
 
-	dispatcher.Dispatch("foo", "bar")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
 
 	assert.Equal(t, "hola!", subscriberFoo.result["foo"])
 
-	dispatcher.Dispatch("foo", "bar")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
 	assert.Equal(t, "hola!hola!", subscriberFoo.result["foo"])
 
 	subscriberBar := &testSubscriberBar{}
 	dispatcher.AddSubscriber(subscriberBar)
 
-	dispatcher.Dispatch("bar", "foo")
+	assert.NoError(t, dispatcher.Dispatch("bar", "foo"))
 	assert.Equal(t, "chicha!", subscriberBar.result["bar"])
-	dispatcher.Dispatch("bar", "foo")
+	assert.NoError(t, dispatcher.Dispatch("bar", "foo"))
 	assert.Equal(t, "chicha!chicha!", subscriberBar.result["bar"])
 
 	assert.Equal(t, "hola!hola!", subscriberFoo.result["foo"])
@@ -181,12 +200,12 @@ func TestDefaultDispatcher_RemoveSubscriber(t *testing.T) {
 	subscriberFoo := &testSubscriberFoo{}
 	subscriberID := dispatcher.AddSubscriber(subscriberFoo)
 
-	dispatcher.Dispatch("foo", "bar")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
 
 	assert.Equal(t, "hola!", subscriberFoo.result["foo"])
 
 	dispatcher.RemoveSubscriber(subscriberID)
 
-	dispatcher.Dispatch("foo", "bar")
+	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
 	assert.Equal(t, "hola!", subscriberFoo.result["foo"])
 }

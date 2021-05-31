@@ -5,6 +5,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/phramz/go-go-gadgets/pkg/logger"
 	"github.com/satori/go.uuid"
 	"github.com/thoas/go-funk"
@@ -24,8 +25,8 @@ func NewDispatcher(ctx context.Context, logger logger.Logger) Dispatcher {
 
 // Dispatcher abstraction for event dispatchers
 type Dispatcher interface {
-	Fire(eventName string, event Event)
-	Dispatch(eventName string, event Event)
+	Fire(eventName string, event Event, onError ...func(err error) (stopPropagation bool))
+	Dispatch(eventName string, event Event, onError ...func(err error) (stopPropagation bool)) error
 	AddListener(eventName string, listener Listener) string
 	AddListenerWithPriority(eventName string, listener Listener, priority int) string
 	AddSubscriber(subscriber Subscriber) string
@@ -48,20 +49,42 @@ type defaultDispatcher struct {
 	subscriber map[string][]string
 }
 
-func (d *defaultDispatcher) Fire(eventName string, event Event) {
+func (d *defaultDispatcher) Fire(eventName string, event Event, onError ...func(err error) (stopPropagation bool)) {
 	go func(n string, e Event) {
-		d.Dispatch(n, e)
+		_ = d.Dispatch(n, e, onError...)
 	}(eventName, event)
 }
 
-func (d *defaultDispatcher) Dispatch(eventName string, event Event) {
+func (d *defaultDispatcher) Dispatch(eventName string, event Event, onError ...func(err error) (stopPropagation bool)) error {
+	var result *multierror.Error
+
 	for _, h := range d.handlers {
 		if h.eventName != eventName {
 			continue
 		}
 
-		h.listener(event)
+		if err := h.listener(event); err != nil {
+			result = multierror.Append(result, err)
+
+			d.logger.Errorf("error while dispatching event: %v", err)
+
+			if len(onError) < 1 {
+				continue
+			}
+
+			for _, fn := range onError {
+				if fn(err) {
+					return result.ErrorOrNil()
+				}
+			}
+		}
 	}
+
+	if result == nil {
+		return nil
+	}
+
+	return result.ErrorOrNil()
 }
 
 func (d *defaultDispatcher) AddListener(eventName string, listener Listener) string {
