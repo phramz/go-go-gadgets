@@ -2,7 +2,6 @@ package logger
 
 // Logger log abstraction
 type Logger interface {
-	Trace(_ ...interface{})
 	Debug(_ ...interface{})
 	Print(_ ...interface{})
 	Info(_ ...interface{})
@@ -11,7 +10,6 @@ type Logger interface {
 	Error(_ ...interface{})
 	Fatal(_ ...interface{})
 	Panic(_ ...interface{})
-	Tracef(_ string, _ ...interface{})
 	Debugf(_ string, _ ...interface{})
 	Infof(_ string, _ ...interface{})
 	Printf(_ string, _ ...interface{})
@@ -20,7 +18,6 @@ type Logger interface {
 	Errorf(_ string, _ ...interface{})
 	Fatalf(_ string, _ ...interface{})
 	Panicf(_ string, _ ...interface{})
-	Traceln(_ ...interface{})
 	Debugln(_ ...interface{})
 	Infoln(_ ...interface{})
 	Println(_ ...interface{})
@@ -29,4 +26,11 @@ type Logger interface {
 	Errorln(_ ...interface{})
 	Fatalln(_ ...interface{})
 	Panicln(_ ...interface{})
+}
+
+// Traceable log abstraction
+type Traceable interface {
+	Trace(_ ...interface{})
+	Traceln(_ ...interface{})
+	Tracef(_ string, _ ...interface{})
 }
