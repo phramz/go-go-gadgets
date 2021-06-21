@@ -23,17 +23,6 @@ func NewDispatcher(ctx context.Context, logger logger.Logger) Dispatcher {
 	}
 }
 
-// Dispatcher abstraction for event dispatchers
-type Dispatcher interface {
-	Fire(eventName string, event Event, onError ...ErrorFn)
-	Dispatch(eventName string, event Event, onError ...ErrorFn) error
-	AddListener(eventName string, listener Listener) string
-	AddListenerWithPriority(eventName string, listener Listener, priority int) string
-	AddSubscriber(subscriber Subscriber) string
-	RemoveListener(listenerID string)
-	RemoveSubscriber(subscriberID string)
-}
-
 type handler struct {
 	id        string
 	eventName string
