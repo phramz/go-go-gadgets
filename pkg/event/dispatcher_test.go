@@ -97,14 +97,14 @@ func (t *testSubscriberBar) GetSubscriptions() []Subscription {
 }
 
 func TestNewDispatcher(t *testing.T) {
-	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
+	dispatcher := NewDispatcher(logger.NewNullLogger())
 
 	assert.NotNil(t, dispatcher)
 	assert.Implements(t, (*Dispatcher)(nil), dispatcher)
 }
 
 func TestDefaultDispatcher_AddListener(t *testing.T) {
-	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
+	dispatcher := NewDispatcher(logger.NewNullLogger())
 
 	var result string
 	dispatcher.AddListener("foo", func(_ string, event Event) error {
@@ -112,12 +112,12 @@ func TestDefaultDispatcher_AddListener(t *testing.T) {
 		return nil
 	})
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
 	assert.Equal(t, "bar", result)
 }
 
 func TestDefaultDispatcher_RemoveListener(t *testing.T) {
-	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
+	dispatcher := NewDispatcher(logger.NewNullLogger())
 
 	var result string
 	listenerID := dispatcher.AddListener("foo", func(_ string, event Event) error {
@@ -125,19 +125,19 @@ func TestDefaultDispatcher_RemoveListener(t *testing.T) {
 		return nil
 	})
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
-	assert.NoError(t, dispatcher.Dispatch("foo", "bazz"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bazz")))
 	assert.Equal(t, "barbazz", result)
 
 	dispatcher.RemoveListener(listenerID)
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
-	assert.NoError(t, dispatcher.Dispatch("foo", "bazz"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bazz")))
 
 	assert.Equal(t, "barbazz", result)
 }
 
 func TestDefaultDispatcher_AddListenerWithPriority(t *testing.T) {
-	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
+	dispatcher := NewDispatcher(logger.NewNullLogger())
 
 	var result string
 
@@ -166,46 +166,46 @@ func TestDefaultDispatcher_AddListenerWithPriority(t *testing.T) {
 		return nil
 	}, 0)
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
 	assert.Equal(t, "hola!", result)
 }
 
 func TestDefaultDispatcher_AddSubscriber(t *testing.T) {
-	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
+	dispatcher := NewDispatcher(logger.NewNullLogger())
 
 	subscriberFoo := &testSubscriberFoo{}
 	dispatcher.AddSubscriber(subscriberFoo)
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
 
 	assert.Equal(t, "hola!", subscriberFoo.result["foo"])
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
 	assert.Equal(t, "hola!hola!", subscriberFoo.result["foo"])
 
 	subscriberBar := &testSubscriberBar{}
 	dispatcher.AddSubscriber(subscriberBar)
 
-	assert.NoError(t, dispatcher.Dispatch("bar", "foo"))
+	assert.NoError(t, dispatcher.Emit("bar", DefaultEvent(context.TODO(), "foo")))
 	assert.Equal(t, "chicha!", subscriberBar.result["bar"])
-	assert.NoError(t, dispatcher.Dispatch("bar", "foo"))
+	assert.NoError(t, dispatcher.Emit("bar", DefaultEvent(context.TODO(), "foo")))
 	assert.Equal(t, "chicha!chicha!", subscriberBar.result["bar"])
 
 	assert.Equal(t, "hola!hola!", subscriberFoo.result["foo"])
 }
 
 func TestDefaultDispatcher_RemoveSubscriber(t *testing.T) {
-	dispatcher := NewDispatcher(context.TODO(), logger.NewNullLogger())
+	dispatcher := NewDispatcher(logger.NewNullLogger())
 
 	subscriberFoo := &testSubscriberFoo{}
 	subscriberID := dispatcher.AddSubscriber(subscriberFoo)
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
 
 	assert.Equal(t, "hola!", subscriberFoo.result["foo"])
 
 	dispatcher.RemoveSubscriber(subscriberID)
 
-	assert.NoError(t, dispatcher.Dispatch("foo", "bar"))
+	assert.NoError(t, dispatcher.Emit("foo", DefaultEvent(context.TODO(), "bar")))
 	assert.Equal(t, "hola!", subscriberFoo.result["foo"])
 }

@@ -1,13 +1,6 @@
 package event
 
-var (
-	_ Subscription = &defaultSubscription{}
-)
-
-// Subscriber abstraction for event subscribers
-type Subscriber interface {
-	GetSubscriptions() []Subscription
-}
+var _ Subscription = (*defaultSubscription)(nil)
 
 // NewSubscription return a new instance of Subscription
 func NewSubscription(eventName string, listener Listener) Subscription {
@@ -24,13 +17,6 @@ func NewSubscriptionWithPriority(eventName string, listener Listener, priority i
 		listener:  listener,
 		priority:  priority,
 	}
-}
-
-// Subscription abstraction for event subscriptions
-type Subscription interface {
-	GetEventName() string
-	GetPriority() int
-	GetListener() Listener
 }
 
 type defaultSubscription struct {

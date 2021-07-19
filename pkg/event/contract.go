@@ -1,7 +1,13 @@
 package event
 
+import "context"
+
 // Event generic event type alias
 type Event interface {
+	Context() context.Context
+	Payload() interface{}
+	StopPropagation()
+	PropagationStopped() bool
 }
 
 // Listener generic listener type alias
@@ -13,6 +19,11 @@ type ErrorFn = func(err error) (stopPropagation bool)
 // Dispatcher abstraction for event dispatchers
 type Dispatcher interface {
 	Emitter
+	Registry
+}
+
+// Registry abstraction for event registries
+type Registry interface {
 	AddListener(eventName string, listener Listener) string
 	AddListenerWithPriority(eventName string, listener Listener, priority int) string
 	AddSubscriber(subscriber Subscriber) string
@@ -22,6 +33,17 @@ type Dispatcher interface {
 
 // Emitter abstraction for event emitters
 type Emitter interface {
-	Fire(eventName string, event Event, onError ...ErrorFn)
-	Dispatch(eventName string, event Event, onError ...ErrorFn) error
+	Emit(eventName string, event Event) error
+}
+
+// Subscription abstraction for event subscriptions
+type Subscription interface {
+	GetEventName() string
+	GetPriority() int
+	GetListener() Listener
+}
+
+// Subscriber abstraction for event subscribers
+type Subscriber interface {
+	GetSubscriptions() []Subscription
 }

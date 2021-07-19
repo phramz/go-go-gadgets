@@ -11,12 +11,11 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-var _ Dispatcher = &defaultDispatcher{}
+var _ Dispatcher = (*defaultDispatcher)(nil)
 
 // NewDispatcher returns a new instance of event.Dispatcher
-func NewDispatcher(ctx context.Context, logger logger.Logger) Dispatcher {
+func NewDispatcher(logger logger.Logger) Dispatcher {
 	return &defaultDispatcher{
-		ctx:        ctx,
 		logger:     logger,
 		handlers:   make([]handler, 0),
 		subscriber: make(map[string][]string),
@@ -32,19 +31,12 @@ type handler struct {
 
 type defaultDispatcher struct {
 	sync.Mutex
-	ctx        context.Context
 	logger     logger.Logger
 	handlers   []handler
 	subscriber map[string][]string
 }
 
-func (d *defaultDispatcher) Fire(eventName string, event Event, onError ...ErrorFn) {
-	go func(n string, e Event) {
-		_ = d.Dispatch(n, e, onError...)
-	}(eventName, event)
-}
-
-func (d *defaultDispatcher) Dispatch(eventName string, event Event, onError ...ErrorFn) error {
+func (d *defaultDispatcher) Emit(eventName string, event Event) error {
 	var result *multierror.Error
 
 	for _, h := range d.handlers {
@@ -56,16 +48,10 @@ func (d *defaultDispatcher) Dispatch(eventName string, event Event, onError ...E
 			result = multierror.Append(result, err)
 
 			d.logger.Errorf("error while dispatching event: %v", err)
+		}
 
-			if len(onError) < 1 {
-				continue
-			}
-
-			for _, fn := range onError {
-				if fn(err) {
-					return result.ErrorOrNil()
-				}
-			}
+		if event.PropagationStopped() {
+			break
 		}
 	}
 
@@ -84,7 +70,14 @@ func (d *defaultDispatcher) AddListenerWithPriority(eventName string, listener L
 	d.Lock()
 	defer d.Unlock()
 
-	return d.add(eventName, listener, priority)
+	listenerID := d.add(eventName, listener, priority)
+	defer func() {
+		if err := d.Emit(ListenerAdded, ListenerEvent(context.Background(), listenerID, eventName, priority, listener)); err != nil {
+			d.logger.Fatalf("unable to add listener %q: %v", listenerID, err)
+		}
+	}()
+
+	return listenerID
 }
 
 func (d *defaultDispatcher) add(eventName string, listener Listener, priority int) string {
@@ -103,13 +96,22 @@ func (d *defaultDispatcher) RemoveListener(listenerID string) {
 	d.Lock()
 	defer d.Unlock()
 
-	d.remove(listenerID)
+	if d.remove(listenerID) {
+		defer func() {
+			if err := d.Emit(ListenerRemoved, ListenerEvent(context.Background(), listenerID, "", 0, nil)); err != nil {
+				d.logger.Fatalf("unable to remove listener %q: %v", listenerID, err)
+			}
+		}()
+	}
 }
 
-func (d *defaultDispatcher) remove(listenerID string) {
+func (d *defaultDispatcher) remove(listenerID string) bool {
+	cnt := len(d.handlers)
 	d.handlers = funk.Filter(d.handlers, func(e handler) bool {
 		return e.id != listenerID
 	}).([]handler)
+
+	return cnt > len(d.handlers)
 }
 
 func (d *defaultDispatcher) AddSubscriber(subscriber Subscriber) string {
@@ -125,6 +127,11 @@ func (d *defaultDispatcher) AddSubscriber(subscriber Subscriber) string {
 
 	d.subscriber[subscriberID] = listenerIDs
 
+	if err := d.Emit(SubscriberAdded, SubscriberEvent(context.Background(), subscriberID, subscriber)); err != nil {
+		d.logger.Fatalf("unable to add subscriber %q: %v", subscriberID, err)
+		return ""
+	}
+
 	return subscriberID
 }
 
@@ -133,6 +140,11 @@ func (d *defaultDispatcher) RemoveSubscriber(subscriberID string) {
 	defer d.Unlock()
 
 	if _, exists := d.subscriber[subscriberID]; !exists {
+		return
+	}
+
+	if err := d.Emit(SubscriberRemoved, SubscriberEvent(context.Background(), subscriberID, nil)); err != nil {
+		d.logger.Fatalf("unable to remove subscriber %q: %v", subscriberID, err)
 		return
 	}
 
