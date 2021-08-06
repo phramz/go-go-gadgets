@@ -14,7 +14,7 @@ import (
 var _ Dispatcher = (*defaultDispatcher)(nil)
 
 // NewDispatcher returns a new instance of event.Dispatcher
-func NewDispatcher(logger logger.Logger) Dispatcher {
+func NewDispatcher(logger logger.FormatLogger) Dispatcher {
 	return &defaultDispatcher{
 		logger:     logger,
 		handlers:   make([]handler, 0),
@@ -31,7 +31,7 @@ type handler struct {
 
 type defaultDispatcher struct {
 	sync.Mutex
-	logger     logger.Logger
+	logger     logger.FormatLogger
 	handlers   []handler
 	subscriber map[string][]string
 }

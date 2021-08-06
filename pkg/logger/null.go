@@ -3,7 +3,7 @@ package logger
 var _ Logger = &nullLogger{}
 
 // NewNullLogger returns a logger that does log anything
-func NewNullLogger() Logger {
+func NewNullLogger() FullLogger {
 	return &nullLogger{}
 }
 
