@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: SOLIDSoftworks/semver-tags@1.0.2
+      - uses: SOLIDSoftworks/semver-tags@1.0.3
         id: semver
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
