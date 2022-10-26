@@ -2,14 +2,14 @@
 vendors:
 	go mod download
 
-.PHONY: test
-test: lint unit
-
-.PHONY: unit
-unit:
-	go test -race -cover ./...
+.PHONY: format
+format:
+	go fmt ./...
 
 .PHONY: lint
 lint:
-	golangci-lint run
-	golint -set_exit_status ./...
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint golangci-lint run
+
+.PHONY: test
+test:
+	go test -race -cover ./...
