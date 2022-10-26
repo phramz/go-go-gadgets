@@ -1,22 +1,25 @@
-name: Build & Release
+name: Release
 on:
-  pull_request:
-    types: [ closed ]
+  push:
     branches:
       - main
 
 jobs:
   release:
-    name: Tag version
+    name: Tag and release new version
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged
+    environment:
+        name: release
     steps:
       - uses: actions/checkout@v3
 
-      - uses: SOLIDSoftworks/semver-tags@1.0.4
+      - id: vars
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+      - uses: SOLIDSoftworks/semver-tags@v1.5.2
         id: semver
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag-prefix: "v"
           default-version: "0.0.1"
 
